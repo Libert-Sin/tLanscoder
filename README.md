@@ -92,7 +92,7 @@ ruby script_name.rb -image jpg
 # 출력
 
 변환된 비디오 및 이미지 파일은 자동으로 생성되는 ./transcoded/ 디렉터리에 저장됩니다.
-예제 명령어
+
 
     비디오를 H.264로 CPU 기반 인코딩:
 
