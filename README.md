@@ -13,10 +13,11 @@
 
 다음 소프트웨어가 설치되어 있어야 합니다:
 
-1. **Ruby** (버전 2.5 이상)
-   ```bash
+**Ruby** (버전 2.5 이상)
+```bash
    sudo pacman -S ruby
 ```
+
 FFmpeg (비디오 인코딩을 위해 필요)
 
 ```bash
