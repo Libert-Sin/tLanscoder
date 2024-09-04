@@ -33,8 +33,7 @@ sudo pacman -S imagemagick
 mini_magick gem 설치:
 
 ```bash
-
-    gem install mini_magick
+gem install mini_magick
 ```
 
 ## 설치 방법
