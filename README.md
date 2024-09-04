@@ -15,7 +15,7 @@
 
 **Ruby** (버전 2.5 이상)
 ```bash
-   sudo pacman -S ruby
+sudo pacman -S ruby
 ```
 
 FFmpeg (비디오 인코딩을 위해 필요)
