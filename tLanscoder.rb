@@ -173,7 +173,7 @@ end
 
 # 이미지 파일 처리 함수
 def process_images(input_directory, output_directory, format)
-  image_files = Dir.glob("#{input_directory}*.{jpg,png,gif,webp,tiff,bmp,heic}", File::FNM_CASEFOLD)  # 이미지 파일 목록 가져오기
+  image_files = Dir.glob("#{input_directory}*.{jpg,JPG,png,PNG,gif,GIF,webp,WEBP,tiff,TIFF,bmp,BMP,heic,HEIC}", File::FNM_CASEFOLD)  # 이미지 파일 목록 가져오기
   total_files = image_files.length  # 총 이미지 파일 수
 
   if total_files == 0
@@ -206,7 +206,7 @@ else
   if option == '-image'
     process_images(input_directory, output_directory, format)  # 이미지 변환 처리
   else
-    video_files = Dir.glob("#{input_directory}*.{mp4,mov,avi,mkv,mxf,rsv}", File::FNM_CASEFOLD)  # 영상 파일 목록 가져오기
+    video_files = Dir.glob("#{input_directory}*.{mp4,MP4,mov,MOV,avi,AVI,mkv,MKV,mxf,MXF,rsv,RSV}", File::FNM_CASEFOLD)  # 영상 파일 목록 가져오기
     calculate_total_video_duration(video_files)  # 총 영상 길이 계산
     total_files = video_files.length  # 총 영상 파일 수
 
