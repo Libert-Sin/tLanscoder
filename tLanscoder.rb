@@ -214,16 +214,16 @@ else
     puts("|| 작업 준비 중 ||")
     input_file_directory = File.dirname(input_directory)  # 입력 디렉터리 경로 추출
     log_file = Tempfile.new('ffmpeg_log', input_file_directory)  # 임시 로그 파일 생성
-
-    video_files.each_with_index do |input_file, index|
-      current_index = index + 1  # 현재 파일 인덱스
-      ffmpeg_cmd, output_file = ffmpeg_command_and_output_file(input_file, output_directory, option)  # FFMPEG 명령어 생성
-      next if ffmpeg_cmd.nil?  # 명령어가 없으면 다음 파일로 이동
     puts("|| 작업 시작 ||")
     puts(" ")
     puts("초기화 중")
     puts("초기화 중")
     puts("초기화 중")
+
+    video_files.each_with_index do |input_file, index|
+      current_index = index + 1  # 현재 파일 인덱스
+      ffmpeg_cmd, output_file = ffmpeg_command_and_output_file(input_file, output_directory, option)  # FFMPEG 명령어 생성
+      next if ffmpeg_cmd.nil?  # 명령어가 없으면 다음 파일로 이동
 
       encode_video(ffmpeg_cmd, $video_durations[index], $total_video_duration, log_file, total_files, current_index)  # 영상 인코딩
     end
