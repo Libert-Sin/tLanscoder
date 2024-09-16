@@ -10,6 +10,8 @@ def ffmpeg_command_and_output_file(input_file, output_directory, option)
   output_sub_directory = File.join(output_directory, relative_path) # 출력 디렉터리 내 하위 폴더 유지
   FileUtils.mkdir_p(output_sub_directory) # 출력 디렉터리 하위 폴더 생성
 
+  fps = get_video_fps(input_file)  # FPS 확인 함수 호출
+
   case option
   when '-dnxhd' # DNxHD 포맷 (CPU)
     output_file = "#{output_sub_directory}/#{File.basename(input_file, ext)}.mov"
@@ -91,7 +93,7 @@ def ffmpeg_command_and_output_file(input_file, output_directory, option)
     return [nil, nil]  # 잘못된 옵션 처리
   end
 
-  [command, output_file]  # FFMPEG 명령어와 출력 파일 경로 반환
+  [command, output_file, fps]  # FFMPEG 명령어와 출력 파일 경로 반환
 end
 
 
@@ -127,6 +129,14 @@ def format_duration(seconds)
   format("%02d:%02d:%02d", hours, minutes, seconds)  # '시:분:초' 형식 반환
 end
 
+# 영상의 FPS 정보를 추출하는 함수
+def get_video_fps(input_file)
+  ffprobe_cmd = "ffprobe -v 0 -select_streams v:0 -show_entries stream=r_frame_rate -of csv=p=0 '#{input_file}'"
+  fps_info = `#{ffprobe_cmd}`.strip  # FPS 정보를 추출
+  numerator, denominator = fps_info.split('/').map(&:to_f)  # 분자와 분모로 나누기
+  fps = (denominator != 0) ? (numerator / denominator) : 0  # FPS 계산
+  fps.round(2)  # FPS 반올림하여 반환
+end
 
 
 # 영상 파일들의 총 길이 계산 및 각 파일 길이 저장
@@ -146,7 +156,7 @@ end
 
 
 # FFMPEG 명령어 실행 및 진행률 추적 함수
-def encode_video(ffmpeg_cmd, video_duration, total_duration, log_file, total_files, current_index)
+def encode_video(ffmpeg_cmd, video_duration, total_duration, log_file, total_files, current_index, fps)
   video_duration ||= 0.0
   start_time = Time.now
   pid = spawn("#{ffmpeg_cmd} 2> #{log_file.path}") # FFMPEG 프로세스 실행
@@ -188,22 +198,9 @@ def encode_video(ffmpeg_cmd, video_duration, total_duration, log_file, total_fil
                current_index, total_files, total_elapsed_str, total_remaining_str, total_complete_str)
         printf("|| 현재 작업 || %s\t작업구간: %s\t남은구간: %s\t 완료시각: %s\n",
                progress_str, elapsed_time_str, format_duration(remaining_time), complete_time.strftime("%m/%d %H:%M:%S"))
-        printf("   평균 작업 속도 : %.2fs/s\n", average_speed)
+        printf("   평균 작업 속도 : %.2fs/s (%.2ffps)\n", average_speed, average_speed*fps)
       end
     end
-  end
-end
-
-
-# 이미지 변환 함수
-def convert_image(input_file, output_file, format, total_files, current_index)
-  begin
-    image = MiniMagick::Image.open(input_file)  # 이미지 파일 열기
-    image.format(format)  # 이미지 포맷 변환
-    image.write(output_file)  # 변환된 이미지 저장
-    puts "이미지 처리: 파일 #{current_index}/#{total_files} (#{input_file})"
-  rescue => e
-    puts "변환 실패: #{input_file}, 오류: #{e.message}"
   end
 end
 
@@ -259,11 +256,11 @@ else
 
     video_files.each_with_index do |input_file, index|
       current_index = index + 1  # 현재 파일 인덱스
-      ffmpeg_cmd, output_file = ffmpeg_command_and_output_file(input_file, output_directory, option)  # FFMPEG 명령어 생성
+      ffmpeg_cmd, output_file, fps = ffmpeg_command_and_output_file(input_file, output_directory, option)  # FFMPEG 명령어와 FPS 생성
       next if ffmpeg_cmd.nil?  # 명령어가 없으면 다음 파일로 이동
 
       log_file = Tempfile.new('ffmpeg_log')  # 임시 로그 파일 생성
-      encode_video(ffmpeg_cmd, $video_durations[index], $total_video_duration, log_file, total_files, current_index)  # 영상 인코딩
+      encode_video(ffmpeg_cmd, $video_durations[index], $total_video_duration, log_file, total_files, current_index, fps)  # 영상 인코딩 시 FPS 추가
       log_file.close
       log_file.unlink
     end
