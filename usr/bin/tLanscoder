@@ -1,0 +1,8 @@
+#!/usr/bin/env ruby
+
+# Ruby 명령어와 스크립트 경로를 함께 지정
+ruby_command = "/usr/bin/ruby"
+script_path = "/PATH/tLanscoder.rb"
+
+# exec 함수로 Ruby 명령어와 옵션을 인수로 넘김
+exec ruby_command, script_path, *ARGV
