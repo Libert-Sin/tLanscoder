@@ -133,6 +133,7 @@ end
 def get_video_fps(input_file)
   ffprobe_cmd = "ffprobe -v 0 -select_streams v:0 -show_entries stream=r_frame_rate -of csv=p=0 '#{input_file}'"
   fps_info = `#{ffprobe_cmd}`.strip  # FPS 정보를 추출
+  return 30.0 if fps_info.empty?  # FPS 정보가 없을 경우 기본값으로 30fps
   numerator, denominator = fps_info.split('/').map(&:to_f)  # 분자와 분모로 나누기
   fps = (denominator != 0) ? (numerator / denominator) : 0  # FPS 계산
   fps.round(2)  # FPS 반올림하여 반환
@@ -260,7 +261,7 @@ else
       next if ffmpeg_cmd.nil?  # 명령어가 없으면 다음 파일로 이동
 
       log_file = Tempfile.new('ffmpeg_log')  # 임시 로그 파일 생성
-      encode_video(ffmpeg_cmd, $video_durations[index], $total_video_duration, log_file, total_files, current_index, fps)  # 영상 인코딩 시 FPS 추가
+      encode_video(ffmpeg_cmd, $video_durations[index], $total_video_duration, log_file, total_files, current_index, fps)
       log_file.close
       log_file.unlink
     end
