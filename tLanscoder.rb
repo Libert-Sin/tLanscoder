@@ -2,11 +2,13 @@ require 'fileutils'   # 파일 및 디렉터리 작업을 위한 모듈
 require 'tempfile'    # 임시 파일 생성을 위한 모듈
 require 'date'        # 날짜 및 시간 처리를 위한 모듈
 require 'mini_magick' # 이미지 처리 라이브러리 MiniMagick
+require 'tty-cursor'
+
 
 # FFMPEG 명령어와 출력 파일 경로를 생성하는 함수
 def ffmpeg_command_and_output_file(input_file, output_directory, option)
   ext = File.extname(input_file)  # 입력 파일의 확장자 추출
-  relative_path = File.dirname(input_file).sub('./', '') # 상대 경로 계산
+  relative_path = File.dirname(input_file).sub(/^\.\//, '') # 상대 경로 계산 (윈도우/리눅스 호환)
   output_sub_directory = File.join(output_directory, relative_path) # 출력 디렉터리 내 하위 폴더 유지
   FileUtils.mkdir_p(output_sub_directory) # 출력 디렉터리 하위 폴더 생성
 
@@ -14,80 +16,80 @@ def ffmpeg_command_and_output_file(input_file, output_directory, option)
 
   case option
   when '-dnxhd' # DNxHD 포맷 (CPU)
-    output_file = "#{output_sub_directory}/#{File.basename(input_file, ext)}.mov"
-    command = "ffmpeg -i '#{input_file}' -vf 'format=yuv422p10le' -c:v dnxhd -profile:v dnxhr_hqx -c:a pcm_s24le -ac 2 -f mov '#{output_file}'"
+    output_file = File.join(output_sub_directory, "#{File.basename(input_file, ext)}.mov")
+    command = "ffmpeg -i \"#{input_file}\" -vf \"format=yuv422p10le\" -c:v dnxhd -profile:v dnxhr_hqx -c:a pcm_s24le -ac 2 -f mov \"#{output_file}\""
 
   when '-dnxhd_proxy'  # DNxHD 프록시 포맷 (CPU)
-    output_file = "#{output_sub_directory}/#{File.basename(input_file, ext)}_proxy.mov"
-    command = "ffmpeg -i '#{input_file}' -vf 'scale=-1:720,format=yuv422p10le' -c:v dnxhd -profile:v dnxhr_sq -c:a pcm_s24le -ac 2 -f mov '#{output_file}'"
+    output_file = File.join(output_sub_directory, "#{File.basename(input_file, ext)}_proxy.mov")
+    command = "ffmpeg -i \"#{input_file}\" -vf \"scale=-1:720,format=yuv422p10le\" -c:v dnxhd -profile:v dnxhr_sq -c:a pcm_s24le -ac 2 -f mov \"#{output_file}\""
 
   when '-dnxhdR'  # DNxHD 포맷 (라데온 GPU, VAAPI)
-    output_file = "#{output_sub_directory}/#{File.basename(input_file, ext)}.mov"
-    command = "ffmpeg -hwaccel vaapi -i '#{input_file}' -vf 'format=yuv422p10le' -c:v dnxhd -profile:v dnxhr_hqx -c:a pcm_s24le -ac 2 -f mov '#{output_file}'"
+    output_file = File.join(output_sub_directory, "#{File.basename(input_file, ext)}.mov")
+    command = "ffmpeg -hwaccel vaapi -i \"#{input_file}\" -vf \"format=yuv422p10le\" -c:v dnxhd -profile:v dnxhr_hqx -c:a pcm_s24le -ac 2 -f mov \"#{output_file}\""
 
   when '-dnxhdR_proxy'  # DNxHD 프록시 포맷 (라데온 GPU, VAAPI)
-    output_file = "#{output_sub_directory}/#{File.basename(input_file, ext)}_proxy.mov"
-    command = "ffmpeg -hwaccel vaapi -i '#{input_file}' -vf 'scale=-1:720,format=yuv422p10le' -c:v dnxhd -profile:v dnxhr_sq -c:a pcm_s24le -ac 2 -f mov '#{output_file}'"
+    output_file = File.join(output_sub_directory, "#{File.basename(input_file, ext)}_proxy.mov")
+    command = "ffmpeg -hwaccel vaapi -i \"#{input_file}\" -vf \"scale=-1:720,format=yuv422p10le\" -c:v dnxhd -profile:v dnxhr_sq -c:a pcm_s24le -ac 2 -f mov \"#{output_file}\""
 
   when '-dnxhdG'  # DNxHD 포맷 (지포스 GPU, NVENC)
-    output_file = "#{output_sub_directory}/#{File.basename(input_file, ext)}.mov"
-    command = "ffmpeg -hwaccel cuda -i '#{input_file}' -vf 'format=yuv422p10le' -c:v dnxhd -profile:v dnxhr_hqx -c:a pcm_s24le -ac 2 -f mov '#{output_file}'"
+    output_file = File.join(output_sub_directory, "#{File.basename(input_file, ext)}.mov")
+    command = "ffmpeg -hwaccel cuda -i \"#{input_file}\" -vf \"format=yuv422p10le\" -c:v dnxhd -profile:v dnxhr_hqx -c:a pcm_s24le -ac 2 -f mov \"#{output_file}\""
 
   when '-dnxhdG_proxy'  # DNxHD 프록시 포맷 (지포스 GPU, NVENC)
-    output_file = "#{output_sub_directory}/#{File.basename(input_file, ext)}_proxy.mov"
-    command = "ffmpeg -hwaccel cuda -i '#{input_file}' -vf 'scale=-1:720,format=yuv422p10le' -c:v dnxhd -profile:v dnxhr_sq -c:a pcm_s24le -ac 2 -f mov '#{output_file}'"
+    output_file = File.join(output_sub_directory, "#{File.basename(input_file, ext)}_proxy.mov")
+    command = "ffmpeg -hwaccel cuda -i \"#{input_file}\" -vf \"scale=-1:720,format=yuv422p10le\" -c:v dnxhd -profile:v dnxhr_sq -c:a pcm_s24le -ac 2 -f mov \"#{output_file}\""
 
   when '-h264' # H.264 포맷 (CPU)
-    output_file = "#{output_sub_directory}/#{File.basename(input_file, ext)}.mp4"
-    command = "ffmpeg -i '#{input_file}' -c:v libx264 -preset fast -crf 23 '#{output_file}'"
+    output_file = File.join(output_sub_directory, "#{File.basename(input_file, ext)}.mp4")
+    command = "ffmpeg -i \"#{input_file}\" -c:v libx264 -preset fast -crf 23 \"#{output_file}\""
 
   when '-h264_proxy' # H.264 프록시 포맷 (CPU)
-    output_file = "#{output_sub_directory}/#{File.basename(input_file, ext)}_proxy.mp4"
-    command = "ffmpeg -i '#{input_file}' -vf scale=-1:720 -c:v libx264 -preset fast -crf 23 '#{output_file}'"
+    output_file = File.join(output_sub_directory, "#{File.basename(input_file, ext)}_proxy.mp4")
+    command = "ffmpeg -i \"#{input_file}\" -vf scale=-1:720 -c:v libx264 -preset fast -crf 23 \"#{output_file}\""
 
   when '-h264R' # H.264 포맷 (라데온 GPU, VAAPI)
-    output_file = "#{output_sub_directory}/#{File.basename(input_file, ext)}.mp4"
-    command = "ffmpeg -hwaccel vaapi -vaapi_device /dev/dri/renderD128 -i '#{input_file}' -vf 'format=nv12,hwupload' -c:v h264_vaapi '#{output_file}'"
+    output_file = File.join(output_sub_directory, "#{File.basename(input_file, ext)}.mp4")
+    command = "ffmpeg -hwaccel vaapi -vaapi_device /dev/dri/renderD128 -i \"#{input_file}\" -vf \"format=nv12,hwupload\" -c:v h264_vaapi \"#{output_file}\""
 
   when '-h264R_proxy' # H.264 프록시 포맷 (라데온 GPU, VAAPI)
-    output_file = "#{output_sub_directory}/#{File.basename(input_file, ext)}_proxy.mp4"
-    command = "ffmpeg -hwaccel vaapi -vaapi_device /dev/dri/renderD128 -i '#{input_file}' -vf 'scale=-1:720,format=nv12,hwupload' -c:v h264_vaapi '#{output_file}'"
+    output_file = File.join(output_sub_directory, "#{File.basename(input_file, ext)}_proxy.mp4")
+    command = "ffmpeg -hwaccel vaapi -vaapi_device /dev/dri/renderD128 -i \"#{input_file}\" -vf \"scale=-1:720,format=nv12,hwupload\" -c:v h264_vaapi \"#{output_file}\""
 
   when '-h264G' # H.264 포맷 (지포스 GPU, NVENC)
-    output_file = "#{output_sub_directory}/#{File.basename(input_file, ext)}.mp4"
-    command = "ffmpeg -hwaccel cuda -i '#{input_file}' -c:v h264_nvenc -preset fast '#{output_file}'"
+    output_file = File.join(output_sub_directory, "#{File.basename(input_file, ext)}.mp4")
+    command = "ffmpeg -hwaccel cuda -i \"#{input_file}\" -c:v h264_nvenc -preset fast \"#{output_file}\""
 
   when '-h264G_proxy' # H.264 프록시 포맷 (지포스 GPU, NVENC)
-    output_file = "#{output_sub_directory}/#{File.basename(input_file, ext)}_proxy.mp4"
-    command = "ffmpeg -hwaccel cuda -i '#{input_file}' -vf scale=-1:720 -c:v h264_nvenc -preset fast '#{output_file}'"
+    output_file = File.join(output_sub_directory, "#{File.basename(input_file, ext)}_proxy.mp4")
+    command = "ffmpeg -hwaccel cuda -i \"#{input_file}\" -vf scale=-1:720 -c:v h264_nvenc -preset fast \"#{output_file}\""
 
   when '-h265'  # H.265 포맷 (CPU)
-    output_file = "#{output_sub_directory}/#{File.basename(input_file, ext)}.mp4"
-    command = "ffmpeg -i '#{input_file}' -c:v libx265 -preset fast -crf 28 '#{output_file}'"
+    output_file = File.join(output_sub_directory, "#{File.basename(input_file, ext)}.mp4")
+    command = "ffmpeg -i \"#{input_file}\" -c:v libx265 -preset fast -crf 28 \"#{output_file}\""
 
   when '-h265_proxy'  # H.265 프록시 포맷 (CPU)
-    output_file = "#{output_sub_directory}/#{File.basename(input_file, ext)}_proxy.mp4"
-    command = "ffmpeg -i '#{input_file}' -vf scale=-1:720 -c:v libx265 -preset fast -crf 28 '#{output_file}'"
+    output_file = File.join(output_sub_directory, "#{File.basename(input_file, ext)}_proxy.mp4")
+    command = "ffmpeg -i \"#{input_file}\" -vf scale=-1:720 -c:v libx265 -preset fast -crf 28 \"#{output_file}\""
 
   when '-h265R'  # H.265 포맷 (라데온 GPU, VAAPI)
-    output_file = "#{output_sub_directory}/#{File.basename(input_file, ext)}.mp4"
-    command = "ffmpeg -hwaccel vaapi -vaapi_device /dev/dri/renderD128 -i '#{input_file}' -vf 'format=nv12,hwupload' -c:v hevc_vaapi '#{output_file}'"
+    output_file = File.join(output_sub_directory, "#{File.basename(input_file, ext)}.mp4")
+    command = "ffmpeg -hwaccel vaapi -vaapi_device /dev/dri/renderD128 -i \"#{input_file}\" -vf \"format=nv12,hwupload\" -c:v hevc_vaapi \"#{output_file}\""
 
   when '-h265R_proxy'  # H.265 프록시 포맷 (라데온 GPU, VAAPI)
-    output_file = "#{output_sub_directory}/#{File.basename(input_file, ext)}_proxy.mp4"
-    command = "ffmpeg -hwaccel vaapi -vaapi_device /dev/dri/renderD128 -i '#{input_file}' -vf 'scale=-1:720,format=nv12,hwupload' -c:v hevc_vaapi '#{output_file}'"
+    output_file = File.join(output_sub_directory, "#{File.basename(input_file, ext)}_proxy.mp4")
+    command = "ffmpeg -hwaccel vaapi -vaapi_device /dev/dri/renderD128 -i \"#{input_file}\" -vf \"scale=-1:720,format=nv12,hwupload\" -c:v hevc_vaapi \"#{output_file}\""
 
   when '-h265G'  # H.265 포맷 (지포스 GPU, NVENC)
-    output_file = "#{output_sub_directory}/#{File.basename(input_file, ext)}.mp4"
-    command = "ffmpeg -hwaccel cuda -i '#{input_file}' -c:v hevc_nvenc -preset fast '#{output_file}'"
+    output_file = File.join(output_sub_directory, "#{File.basename(input_file, ext)}.mp4")
+    command = "ffmpeg -hwaccel cuda -i \"#{input_file}\" -c:v hevc_nvenc -preset fast \"#{output_file}\""
 
   when '-h265G_proxy'  # H.265 프록시 포맷 (지포스 GPU, NVENC)
-    output_file = "#{output_sub_directory}/#{File.basename(input_file, ext)}_proxy.mp4"
-    command = "ffmpeg -hwaccel cuda -i '#{input_file}' -vf scale=-1:720 -c:v hevc_nvenc -preset fast '#{output_file}'"
+    output_file = File.join(output_sub_directory, "#{File.basename(input_file, ext)}_proxy.mp4")
+    command = "ffmpeg -hwaccel cuda -i \"#{input_file}\" -vf scale=-1:720 -c:v hevc_nvenc -preset fast \"#{output_file}\""
 
   when '-wav' # WAV 오디오 파일 생성
-    output_file = "#{output_sub_directory}/#{File.basename(input_file, ext)}.wav"
-    command = "ffmpeg -i '#{input_file}' -vn -acodec pcm_s24le -ar 48000 '#{output_file}'"
+    output_file = File.join(output_sub_directory, "#{File.basename(input_file, ext)}.wav")
+    command = "ffmpeg -i \"#{input_file}\" -vn -acodec pcm_s24le -ar 48000 \"#{output_file}\""
 
   else
     return [nil, nil]  # 잘못된 옵션 처리
@@ -95,8 +97,6 @@ def ffmpeg_command_and_output_file(input_file, output_directory, option)
 
   [command, output_file, fps]  # FFMPEG 명령어와 출력 파일 경로 반환
 end
-
-
 
 # 디렉토리 내 모든 하위 폴더의 파일 찾기 함수
 def find_files_in_directory(directory, extensions)
@@ -107,9 +107,6 @@ def find_files_in_directory(directory, extensions)
   files
 end
 
-
-
-
 # 전역 변수 초기화
 $total_video_duration = 0.0  # 전체 영상 파일들의 총 길이
 $current_video_duration_sum = 0.0  # 현재까지 처리된 영상들의 길이 합계
@@ -118,8 +115,6 @@ $total_elapsed_time = 0  # 총 경과 시간
 $total_remaining_time = 0  # 남은 예상 작업 시간
 $total_complete_time = Time.now  # 작업 완료 예상 시간
 $video_durations = []  # 각 영상 파일의 길이를 저장하는 배열
-
-
 
 # 시간을 '시:분:초' 형식으로 변환하는 함수
 def format_duration(seconds)
@@ -131,7 +126,7 @@ end
 
 # 영상의 FPS 정보를 추출하는 함수
 def get_video_fps(input_file)
-  ffprobe_cmd = "ffprobe -v 0 -select_streams v:0 -show_entries stream=r_frame_rate -of csv=p=0 '#{input_file}'"
+  ffprobe_cmd = "ffprobe -v 0 -select_streams v:0 -show_entries stream=r_frame_rate -of csv=p=0 \"#{input_file}\""
   fps_info = `#{ffprobe_cmd}`.strip  # FPS 정보를 추출
   return 30.0 if fps_info.empty?  # FPS 정보가 없을 경우 기본값으로 30fps
   numerator, denominator = fps_info.split('/').map(&:to_f)  # 분자와 분모로 나누기
@@ -139,12 +134,11 @@ def get_video_fps(input_file)
   fps.round(2)  # FPS 반올림하여 반환
 end
 
-
 # 영상 파일들의 총 길이 계산 및 각 파일 길이 저장
 def calculate_total_video_duration(video_files)
   puts("|| 영상 파일 스캔 중 ||")
   video_files.each do |file|
-    ffprobe_duration_cmd = "ffprobe -v error -select_streams v:0 -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 '#{file}'"
+    ffprobe_duration_cmd = "ffprobe -v error -select_streams v:0 -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 \"#{file}\""
     puts("#{file}")  # 현재 처리 중인 파일 출력
     duration = `#{ffprobe_duration_cmd}`.to_f  # 영상 파일 길이 추출
     $total_video_duration += duration  # 총 영상 길이에 추가
@@ -153,14 +147,14 @@ def calculate_total_video_duration(video_files)
   puts("|| 영상 파일 스캔 완료 ||")
   total_video_duration = Time.at($total_video_duration).utc.strftime("%H:%M:%S")  # 총 영상 길이를 시:분:초 형식으로 변환
   puts(total_video_duration)  # 총 영상 길이 출력
+  puts("\n\n\n\n")
 end
-
 
 # FFMPEG 명령어 실행 및 진행률 추적 함수
 def encode_video(ffmpeg_cmd, video_duration, total_duration, log_file, total_files, current_index, fps)
   video_duration ||= 0.0
   start_time = Time.now
-  pid = spawn("#{ffmpeg_cmd} 2> #{log_file.path}") # FFMPEG 프로세스 실행
+  pid = spawn(ffmpeg_cmd, [:out, :err] => log_file.path) # FFMPEG 프로세스 실행
   log_file.rewind
   while Process.waitpid(pid, Process::WNOHANG).nil?
     sleep 1
@@ -205,11 +199,9 @@ def encode_video(ffmpeg_cmd, video_duration, total_duration, log_file, total_fil
   end
 end
 
-
-
 # 이미지 파일 처리 함수
 def process_images(input_directory, output_directory, format)
-  image_files = Dir.glob("#{input_directory}*.{jpg,JPG,png,PNG,gif,GIF,webp,WEBP,tiff,TIFF,bmp,BMP,heic,HEIC}", File::FNM_CASEFOLD)  # 이미지 파일 목록 가져오기
+  image_files = Dir.glob(File.join(input_directory, "*.{jpg,JPG,png,PNG,gif,GIF,webp,WEBP,tiff,TIFF,bmp,BMP,heic,HEIC}"), File::FNM_CASEFOLD)  # 이미지 파일 목록 가져오기
   total_files = image_files.length  # 총 이미지 파일 수
 
   if total_files == 0
@@ -220,16 +212,14 @@ def process_images(input_directory, output_directory, format)
   puts "|| 이미지 변환 작업 시작 ||"
   image_files.each_with_index do |input_file, index|
     ext = File.extname(input_file)  # 확장자 추출
-    relative_path = File.dirname(input_file).sub('./', '') # 상대 경로 계산
+    relative_path = File.dirname(input_file).sub(/^\.\//, '') # 상대 경로 계산 (윈도우/리눅스 호환)
     output_sub_directory = File.join(output_directory, relative_path) # 출력 디렉터리 내 하위 폴더 유지
     FileUtils.mkdir_p(output_sub_directory) # 하위 폴더 생성
-    output_file = "#{output_sub_directory}/#{File.basename(input_file, ext)}.#{format}"  # 변환 후 파일명 설정
+    output_file = File.join(output_sub_directory, "#{File.basename(input_file, ext)}.#{format}")  # 변환 후 파일명 설정
     convert_image(input_file, output_file, format, total_files, index + 1)  # 이미지 변환
   end
   puts "|| 이미지 변환 작업 완료 ||"
 end
-
-
 
 # 메인 로직
 input_directory = "./"  # 현재 디렉터리
@@ -242,7 +232,6 @@ format = ARGV[1]  # 이미지 변환일 경우 두 번째 인자로 이미지 �
 # 비디오 및 이미지 확장자 목록
 video_extensions = %w[mp4 mov avi mkv mxf rsv]
 image_extensions = %w[jpg png gif webp tiff bmp heic]
-
 
 if option.nil?
   puts "option : -dnxhd / -h264 / -h265 / -image (이미지 변환 옵션 추가)"
@@ -267,8 +256,3 @@ else
     end
   end
 end
-
-
-
-
-
