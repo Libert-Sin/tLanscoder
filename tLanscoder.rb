@@ -280,7 +280,47 @@ video_extensions = %w[mp4 mov avi mkv mxf rsv]
 image_extensions = %w[jpg png gif webp tiff bmp heic]
 
 if option.nil?
-  puts "option : -dnxhd / -h264 / -h265 / -image (이미지 변환 옵션 추가)"
+  puts <<-USAGE
+  사용법: ruby tLanscoder.rb [옵션] [이미지 포맷(이미지 변환 시)]
+
+  비디오 변환 옵션:
+  CPU 사용 옵션:
+  -dnxhd         : DNxHD 포맷으로 변환
+  -h264          : H.264 포맷으로 변환
+  -h265          : H.265 포맷으로 변환
+  -dnxhd_proxy   : DNxHD 프록시 포맷으로 변환 (720p)
+  -h264_proxy    : H.264 프록시 포맷으로 변환 (720p)
+  -h265_proxy    : H.265 프록시 포맷으로 변환 (720p)
+  라데온 GPU 사용 옵션 (VAAPI):
+  -dnxhdR        : DNxHD 포맷으로 변환
+  -h264R         : H.264 포맷으로 변환
+  -h265R         : H.265 포맷으로 변환
+  -dnxhdR_proxy  : DNxHD 프록시 포맷으로 변환 (720p)
+  -h264R_proxy   : H.264 프록시 포맷으로 변환 (720p)
+  -h265R_proxy   : H.265 프록시 포맷으로 변환 (720p)
+  지포스 GPU 사용 옵션 (NVENC):
+  -dnxhdG        : DNxHD 포맷으로 변환
+  -h264G         : H.264 포맷으로 변환
+  -h265G         : H.265 포맷으로 변환
+  -dnxhdG_proxy  : DNxHD 프록시 포맷으로 변환 (720p)
+  -h264G_proxy   : H.264 프록시 포맷으로 변환 (720p)
+  -h265G_proxy   : H.265 프록시 포맷으로 변환 (720p)
+
+  오디오 추출 옵션:
+  -wav           : WAV 오디오 파일 추출
+
+  이미지 변환 옵션:
+  -image [포맷]  : 이미지를 지정된 포맷으로 변환 (예: jpg, png, webp)
+
+  예시:
+  비디오 변환: ruby tLanscoder.rb -h264
+  이미지 변환: ruby tLanscoder.rb -image jpg
+
+  참고:
+  - 입력 파일은 현재 디렉토리와 모든 하위 디렉토리에서 자동으로 검색됩니다.
+  - 출력 파일은 './transcoded/' 디렉토리에 원본 파일 구조를 유지하며 저장됩니다.
+  - GPU 옵션을 사용할 때는 해당 하드웨어와 드라이버가 설치되어 있어야 합니다.
+  USAGE
 else
   if option == '-image'
     image_files = find_files_in_directory(input_directory, image_extensions) # 이미지 파일 목록 가져오기
